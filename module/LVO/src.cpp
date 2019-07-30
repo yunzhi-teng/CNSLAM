@@ -5,7 +5,6 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include "opencv2/opencv.hpp"
 #include <fstream>
-
 using namespace cv;
 using namespace std;
 char* raw_path = "/data/SLAM/dataset/kitti/00/image_0/%06d.png";
@@ -16,7 +15,7 @@ Mat getimage(int i)
     Mat img =imread(path);
     return img;
 }
-Mat VO(int image_index,Mat& t);
+Mat VO(int image_index,Mat& x);
 std::vector<vector<float>> get_Pose(const std::string& path) {
 
   std::vector<vector<float>> poses;
@@ -49,13 +48,14 @@ int main()
     int image_index = 0;
     Mat traj = Mat::zeros(600, 600, CV_8UC3);
     vector<vector<float>> poses = get_Pose("/data/SLAM/dataset/poses/00.txt");
-    Mat t = Mat::zeros(3,1,CV_64F);;
-    for(int i = 0;i<1000;i++)
+    Mat x = Mat::zeros(3,1,CV_64F);
+    // Mat R = Mat::zeros(3,3,CV_64F);
+    for(int i = 0;i<100;i++)
     {
-        Mat tt = VO(image_index,t);
+        Mat tt = VO(image_index,x);
         image_index++;
 
-        Point2f center = Point2f((int(t.at<double>(0,0))) + 300, -(int(t.at<double>(2,0))) + 100);
+        Point2f center = Point2f((int(x.at<double>(0,0))) + 300, -(int(x.at<double>(2,0))) + 100);
         circle(traj, center ,1, Scalar(0,0,255), 2);
 
         Point2f t_center = Point2f(int(poses[i][3]) + 300, int(poses[i][11]) + 100);
@@ -70,7 +70,7 @@ int main()
 
     }
 }
-Mat VO(int image_index,Mat & t_o)
+Mat VO(int image_index,Mat & x)
 {
     Mat desc1,desc2;
     Mat img1 = getimage(image_index);
@@ -119,15 +119,17 @@ Mat VO(int image_index,Mat & t_o)
     Point2d principal_point(6.071928000000e+02,1.852157000000e+02);
     double focal_length = 7.188560000000e+02;
     Mat essential_mat;
-    essential_mat = findEssentialMat(points1,points2,focal_length, principal_point);
+    Mat confi;
+    essential_mat = findEssentialMat(points1,points2,focal_length, principal_point,8,0.99999,3,confi);
 
     recoverPose(essential_mat,points1,points2,R,t,focal_length,principal_point);
     cout<< "t:"<<t.t()<<endl;
     cout<< "R: "<<R<<endl;
-
-    t_o = R*t_o +t;
-    cout<<"to:"<<t_o.t()<<endl;
-    cout<<"to2: "<<(t_o.at<double>(2,0)) <<endl;
+    double s = sum(confi)[0];
+    if(s / confi.rows/confi.cols >0.95) 
+        x = R*x + t;
+    cout<<"to:"<<x.t()<<endl;
+    cout<<"to2: "<<(x.at<double>(2,0)) <<endl;
     return t;
 
 }
