@@ -22,7 +22,7 @@ file(GLOB SRC src.cpp)
 
 
 add_executable( LVO ${SRC} )
-add_executable(test test.cpp )
+# add_executable(test test.cpp )
 
 target_link_libraries( LVO ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )
-target_link_libraries( test ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )
+# target_link_libraries( test ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )

@@ -211,25 +211,25 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
         camera_intrin_[3] = K.at<double>(5);
         // cout << "cam_pose_:" << camera_pose_ << endl;
         // cout << " cam intrin:" << camera_intrin_[0] << "," << camera_intrin_[1] << "," << camera_intrin_[2] << "," << camera_intrin_[3] << "\n";
-        // ceres::Problem::Options problem_options;
-        // ceres::Problem problem(problem_options);
-        // double *t3dpoint = (double *)malloc(sizeof(double) * point_3D.size() * 3);
-        // double *ptr3d = t3dpoint;
-        // for (int i = 0; i < point_3D.size(); i += 3)
-        // {
-        //     *ptr3d = point_3D[i].x;
-        //     *(ptr3d + 1) = point_3D[i].y;
-        //     *(ptr3d + 2) = point_3D[i].z;
-        //     ptr3d += 3;
-        // }
+        ceres::Problem::Options problem_options;
+        ceres::Problem problem(problem_options);
+        double *t3dpoint = (double *)malloc(sizeof(double) * point_3D.size() * 3);
+        double *ptr3d = t3dpoint;
+        for (int i = 0; i < point_3D.size(); i += 1)
+        {
+            *ptr3d = point_3D[i].x;
+            *(ptr3d + 1) = point_3D[i].y;
+            *(ptr3d + 2) = point_3D[i].z;
+            ptr3d += 3;
+        }
         // printf("\n###");
         // for (int i = 0; i < point_3D.size(); i++)
         // {
         //     printf("%d,", t3dpoint[i] / 500);
         // }
 
-        // for (int i = 0; i < point_3D.size(); i++)
-        // {
+        for (int i = 0; i < point_3D.size(); i++)
+        {
         //     // printf("\naddresidula3dpoint: ");
         //     // for(int j = 0; j<3; j++)
         //     // {
@@ -237,13 +237,13 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
 
         //     // }
         //     // printf("\n");
-            // problem.AddResidualBlock(new ceres::AutoDiffCostFunction<TReprojectionError, 2, 6, 3, 4>(
-            //                              new TReprojectionError(points2[i].x, points2[i].y)),
-            //                          NULL,
-            //                          camera_pose_.data(),
-            //                          t3dpoint + i * 3,
-            //                          camera_intrin_);
-            // problem.SetParameterBlockConstant(camera_intrin_);
+            problem.AddResidualBlock(new ceres::AutoDiffCostFunction<TReprojectionError, 2, 6, 3, 4>(
+                                         new TReprojectionError(points2[i].x, points2[i].y)),
+                                     NULL,
+                                     camera_pose_.data(),
+                                     t3dpoint + i * 3,
+                                     camera_intrin_);
+            problem.SetParameterBlockConstant(camera_intrin_);
 
             // vector<double*> parameter_block;
             // parameter_block.push_back(camera_pose_.data());
@@ -267,19 +267,19 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
             //     cout<<"froze"<<endl;
 
             // }
-        // }
+        }
         // // configure the solver
-        // ceres::Solver::Options options;
-        // options.use_nonmonotonic_steps = true;
-        // options.preconditioner_type = ceres::SCHUR_JACOBI;
-        // options.linear_solver_type = ceres::ITERATIVE_SCHUR;
-        // // options.use_inner_iterations = true;
-        // options.max_num_iterations = 30;
-        // options.minimizer_progress_to_stdout = true;
+        ceres::Solver::Options options;
+        options.use_nonmonotonic_steps = true;
+        options.preconditioner_type = ceres::SCHUR_JACOBI;
+        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+        options.use_inner_iterations = true;
+        options.max_num_iterations = 40;
+        options.minimizer_progress_to_stdout = true;
 
         // // // solve
-        // ceres::Solver::Summary summary;
-        // ceres::Solve(options, &problem, &summary);
+        ceres::Solver::Summary summary;
+        ceres::Solve(options, &problem, &summary);
 
 
         axis_angle_eigen(0, 0) = camera_pose_(0, 0);
@@ -292,7 +292,7 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
         Eigen::Matrix<double, 3, 3> R_afteropt_verifying;
         ceres::AngleAxisToRotationMatrix<double>(axis_angle_eigen.data(), R_afteropt_verifying.data());
         // cout << "R_afteropt_veryfying:" << R_afteropt_verifying << endl;
-        // cout << summary.BriefReport() << endl;
+        cout << summary.BriefReport() << endl;
         Mat Ropt;
         eigen2cv(R_afteropt_verifying,Ropt);
         // R_accu = Ropt;
@@ -302,7 +302,7 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
 
         x = Rinv_accu*R.inv() *((-1)*t) + x - 2* tr_prev;
         cout<<"x:"<<x<<endl;
-        // free(t3dpoint);
+        free(t3dpoint);
     }
     tr_prev = Rinv_accu *R.inv()*((-1)*t);
     Rinv_accu = Rinv_accu * R.inv(); 
