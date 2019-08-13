@@ -292,7 +292,8 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
         Eigen::Matrix<double, 3, 3> R_afteropt_verifying;
         ceres::AngleAxisToRotationMatrix<double>(axis_angle_eigen.data(), R_afteropt_verifying.data());
         // cout << "R_afteropt_veryfying:" << R_afteropt_verifying << endl;
-        cout << summary.BriefReport() << endl;
+        // cout << summary.BriefReport() << endl;
+        cout<< "t: "<<t<<endl;
         Mat Ropt;
         eigen2cv(R_afteropt_verifying,Ropt);
         // R_accu = Ropt;
