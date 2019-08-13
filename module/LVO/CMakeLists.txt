@@ -8,7 +8,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 
 set(OpenCV_DIR "/data/Downloads/opencv/opencv/build/")
 
-# list( APPEND CMAKE_MODULE_PATH cmake_modules )
 
 find_package( OpenCV )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
