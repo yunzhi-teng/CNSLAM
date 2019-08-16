@@ -1,6 +1,6 @@
 # CNSLAM
 CNSLAM stands for Configurable framework Not only for SLAM,  
-But now it is just a kid, maybe called " Characteristically Naive Slam"
+But now it is just a kid, maybe called "Characteristically Naive Slam"  
 \[WARNING\] There are lots of comments in the code without cleaning now, some for debugging, some for other function. Good for learning, Sorry for your reading. 
 ## dependency
 - ceres for optimization
