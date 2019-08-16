@@ -1,5 +1,5 @@
 #include "Tslam.hpp"
-#define INTERVAL 2
+
 char *raw_path = "/data/SLAM/dataset/kitti/00/image_0/%06d.png";
 
 
@@ -54,51 +54,13 @@ void triangulation(
     }
 }
 
-void triangulation_(
-    const vector<KeyPoint> &keypoint_1,
-    const vector<KeyPoint> &keypoint_2,
-    const std::vector<DMatch> &matches,
-    const Mat &R, const Mat &t,
-    vector<Point3d> &points)
-{
-    Mat T1 = (Mat_<float>(3, 4) << 1, 0, 0, 0,
-              0, 1, 0, 0,
-              0, 0, 1, 0);
-    Mat T2 = (Mat_<float>(3, 4) << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0),
-              R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
-              R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0));
-
-    Mat K = (Mat_<double>(3, 3) << 7.188560000000e+02, 0.000000000000e+00, 6.071928000000e+02, 0.000000000000e+00, 7.188560000000e+02, 1.852157000000e+02, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
-    vector<Point2f> pts_1, pts_2;
-    for (DMatch m : matches)
-    {
-        // 将像素坐标转换至相机坐标
-        pts_1.push_back(pixel2cam(keypoint_1[m.queryIdx].pt, K));
-        pts_2.push_back(pixel2cam(keypoint_2[m.trainIdx].pt, K));
-    }
-
-    Mat pts_4d;
-    cv::triangulatePoints(T1, T2, pts_1, pts_2, pts_4d);
-
-    // 转换成非齐次坐标
-    for (int i = 0; i < pts_4d.cols; i++)
-    {
-        Mat x = pts_4d.col(i);
-        x /= x.at<float>(3, 0); // 归一化
-        Point3d p(
-            x.at<float>(0, 0),
-            x.at<float>(1, 0),
-            x.at<float>(2, 0));
-        points.push_back(p);
-    }
-}
 
 void Tslam::initialize()
 {
     char path[50],path1[50];
     sprintf(path, raw_path, image_index);
     Mat img0 = imread(path);
-    image_index+=INTERVAL;
+    image_index+=INITIAL_INTER;
     sprintf(path1, raw_path, image_index);
     Mat img1 = imread(path1);
     image_index+=INTERVAL;
@@ -202,9 +164,30 @@ void Tslam::initialize()
         frame1.matchkp_mp.push_back(mp_idx);
     }
     last_frame = frame1;
+    // ba();
 }
+void opt_campose_2Rt(const Eigen::Matrix<double, 3, 2>& cam_pose,Mat& R,Mat& t)
+{
+        Eigen::Matrix<double,3,1> R_vec_opt;
+        R_vec_opt(0,0) = cam_pose(0,0);
+        R_vec_opt(1,0) = cam_pose(1,0);
+        R_vec_opt(2,0) = cam_pose(2,0);
+        Eigen::Matrix<double, 3, 3> R_opt_e;
+        ceres::AngleAxisToRotationMatrix<double>(R_vec_opt.data(),R_opt_e.data());
+        Mat Ropt;
+        eigen2cv(R_opt_e,Ropt);
+        R = Ropt;
+        t.at<double>(0) = cam_pose(0, 1);
+        t.at<double>(1) = cam_pose(1, 1);
+        t.at<double>(2) = cam_pose(2, 1);
+}
+
 void Tslam::addframe()
 {
+    // if(image_index %5 ==0)
+    {
+        ba();
+    }
     char path[50];
     sprintf(path, raw_path, image_index);
     Mat img0 = imread(path);
@@ -261,12 +244,80 @@ void Tslam::addframe()
         pts3d_4_pnp.push_back(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d);
         points_4_pnp.push_back(frame_.keyframe_.keypoint[matches_4_pnp[i].trainIdx].pt);
     }
+    cout<<"pts3d_size: "<<pts3d_4_pnp.size()<<endl;
+    // cout<<"pnp_pts3d: "<<pts3d_4_pnp<<endl;
+    // cout<<"pnp_pts2d: "<<points_4_pnp<<endl;
     solvePnP(pts3d_4_pnp,points_4_pnp,K,distortion,R_vec,t_vec,false,SOLVEPNP_ITERATIVE);
+
     Rodrigues(R_vec,R);
-    R = R * (-1);
-    t = t_vec *(-1);
+    R = R * (1);
+    t = t_vec *(1);
     cout<<"t: "<<t<<endl;
 
+// {//perframe ba
+//         Eigen::Matrix<double, 3, 3> R_eigen;
+//         Eigen::Matrix<double, 3, 1> axis_angle_eigen;
+//         cv2eigen(R, R_eigen);
+//         ceres::RotationMatrixToAngleAxis<double>(R_eigen.data(), axis_angle_eigen.data());
+
+//         Eigen::Matrix<double, 3, 2> camera_pose_;
+//         for (int i = 0; i < 3; i++)
+//         {
+//             ((double *)(camera_pose_.data()))[i] = axis_angle_eigen(i, 0);
+//         }
+//         for (int i = 0; i < 3; i++)
+//         {
+//             ((double *)(camera_pose_.data()))[i + 3] = t.at<double>(i);
+//         }
+
+//         double camera_intrin_[4];
+//         camera_intrin_[0] = K.at<double>(0);
+//         camera_intrin_[1] = K.at<double>(2);
+//         camera_intrin_[2] = K.at<double>(4);
+//         camera_intrin_[3] = K.at<double>(5);
+//         ceres::Problem::Options problem_options;
+//         ceres::Problem problem(problem_options);
+//         for (int i = 0; i < points_4_pnp.size(); i++)
+//         {
+//             problem.AddResidualBlock(new ceres::AutoDiffCostFunction<TReprojectionError, 2, 6, 1,1,1, 4>(
+//                                          new TReprojectionError(points_4_pnp[i].x, points_4_pnp[i].y)),
+//                                      NULL,
+//                                      camera_pose_.data(),
+//                                      &(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.x),
+//                                      &(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.y),
+//                                      &(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.z),
+//                                      camera_intrin_);
+//             problem.SetParameterBlockConstant(camera_intrin_);
+//             vector<double*> parameter_block;
+//             parameter_block.push_back(camera_pose_.data());
+//             parameter_block.push_back(&(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.x));
+//             parameter_block.push_back(&(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.y));
+//             parameter_block.push_back(&(all_mappoint[last_frame.matchkp_mp[matches_4_pnp[i].queryIdx]].pt3d.z));
+//             parameter_block.push_back(camera_intrin_);
+//             auto evaluatoption = ceres::Problem::EvaluateOptions();
+//             evaluatoption.parameter_blocks = parameter_block;
+//             vector<double> residules;
+//             double cost;
+//             bool fa =  problem.Evaluate(ceres::Problem::EvaluateOptions(),&cost,&residules,NULL ,NULL);
+//             cout<<"cost:"<<cost<<endl;
+//                 //     cout<<"residuals:"<<residules[0]<<", "<<residules[1]<<endl;
+//         //     problem.ceres::CostFunction::Evaluate();
+//         }
+//         ceres::Solver::Options options;
+//         options.use_nonmonotonic_steps = true;
+//         options.preconditioner_type = ceres::SCHUR_JACOBI;
+//         options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+//         options.use_inner_iterations = true;
+//         options.max_num_iterations = 40;
+//         options.minimizer_progress_to_stdout = true;
+
+//         // // // solve
+//         ceres::Solver::Summary summary;
+//         ceres::Solve(options, &problem, &summary);
+//         // cout << summary.BriefReport() << endl;
+//         opt_campose_2Rt(camera_pose_,R,t);
+
+// }
     //keyframe
     frame_.keyframe_.R = R;
     frame_.keyframe_.t = t;
@@ -317,4 +368,162 @@ void Tslam::addframe()
     }
     last_frame = frame_;
 
+}
+void Tslam::ba()
+{
+
+    ceres::Problem::Options problem_options;
+    ceres::Problem problem(problem_options);
+
+    //intrin
+    double camera_intrin_[4];
+    camera_intrin_[0] = K.at<double>(0);
+    camera_intrin_[1] = K.at<double>(2);
+    camera_intrin_[2] = K.at<double>(4);
+    camera_intrin_[3] = K.at<double>(5);
+    //pose vector
+    vector<Eigen::Matrix<double, 3, 2>> cam_poses;
+    for(int i = 0;i< all_keyframe.size();i++)
+    {
+        Eigen::Matrix<double, 3, 3> R_eigen;
+        Eigen::Matrix<double, 3, 1> axis_angle_eigen;
+        // cv2eigen(all_keyframe[i].R.inv(), R_eigen);
+         cv2eigen(all_keyframe[i].R, R_eigen);
+        ceres::RotationMatrixToAngleAxis<double>(R_eigen.data(), axis_angle_eigen.data());
+        
+        Eigen::Matrix<double, 3, 2> camera_pose_;
+        for (int j = 0; j < 3; j++)
+        {
+            ((double *)(camera_pose_.data()))[j] = axis_angle_eigen(j, 0);
+        }
+        for (int j = 0; j < 3; j++)
+        {
+            // Mat t_ = (-1)* all_keyframe[i].R.inv()*all_keyframe[i].t;
+            ((double *)(camera_pose_.data()))[j + 3] = all_keyframe[i].t.at<double>(j);
+        }
+        cam_poses.push_back(camera_pose_);
+    }
+
+//opt one keyframe
+    static int iii= all_keyframe.size()-1;
+    if(iii<all_keyframe.size())
+    {
+        for(int i = 0;i<all_mappoint.size();i++)
+        {
+            for(int j = 0; j<all_mappoint[i].visible_keyframe_idx.size();j++)
+            {
+                if(all_mappoint[i].visible_keyframe_idx[j] == iii)
+                {
+                    problem.AddResidualBlock(new ceres::AutoDiffCostFunction<TReprojectionError, 2, 6, 1,1,1, 4>(
+                                                new TReprojectionError(all_keyframe[iii].keypoint[all_mappoint[i].keyframe_indexed_pt2d[j]].pt.x, all_keyframe[iii].keypoint[all_mappoint[i].keyframe_indexed_pt2d[j]].pt.y)),
+                                            NULL,
+                                            cam_poses[iii].data(),
+                                            //  t3dpoint+i*3,
+                                            &(all_mappoint[i].pt3d.x),
+                                            &(all_mappoint[i].pt3d.y),
+                                            &(all_mappoint[i].pt3d.z),
+                                            camera_intrin_);
+                    problem.SetParameterBlockConstant(camera_intrin_);
+                    vector<double*> parameter_block;
+                    parameter_block.push_back(cam_poses[iii].data());
+                    parameter_block.push_back(&(all_mappoint[i].pt3d.x));
+                    parameter_block.push_back(&(all_mappoint[i].pt3d.y));
+                    parameter_block.push_back(&(all_mappoint[i].pt3d.z));
+                    parameter_block.push_back(camera_intrin_);
+                    auto evaluatoption = ceres::Problem::EvaluateOptions();
+                    evaluatoption.parameter_blocks = parameter_block;
+                    vector<double> residules;
+                    double cost;
+                    bool fa =  problem.Evaluate(ceres::Problem::EvaluateOptions(),&cost,&residules,NULL ,NULL);
+                    cout<<"cost:"<<cost<<endl;
+                }
+            }
+        }
+
+
+
+        ceres::Solver::Options options;
+        options.use_nonmonotonic_steps = true;
+        options.preconditioner_type = ceres::SCHUR_JACOBI;
+        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+        options.use_inner_iterations = true;
+        options.max_num_iterations = 80;
+        options.minimizer_progress_to_stdout = true;
+        ceres::Solver::Summary summary;
+        ceres::Solve(options, &problem, &summary);
+        cout << summary.BriefReport() << endl;
+
+        Eigen::Matrix<double,3,1> R_vec_opt;
+        R_vec_opt(0,0) = cam_poses[iii](0,0);
+        R_vec_opt(1,0) = cam_poses[iii](1,0);
+        R_vec_opt(2,0) = cam_poses[iii](2,0);
+
+        Eigen::Matrix<double, 3, 3> R_opt_e;
+        ceres::AngleAxisToRotationMatrix<double>(R_vec_opt.data(),R_opt_e.data());
+        Mat Ropt;
+        eigen2cv(R_opt_e,Ropt);
+        all_keyframe[iii].R = Ropt;
+        all_keyframe[iii].t.at<double>(0) = cam_poses[iii](0, 1);
+        all_keyframe[iii].t.at<double>(1) = cam_poses[iii](1, 1);
+        all_keyframe[iii].t.at<double>(2) = cam_poses[iii](2, 1);
+        last_frame.keyframe_.R = all_keyframe[all_keyframe.size()-1].R;
+        last_frame.keyframe_.t = all_keyframe[all_keyframe.size()-1].t;
+        iii++;
+    }
+    // if(image_index % 3 ==0)
+    // {
+    //     for(int i =0;i<all_mappoint.size();i++)//opt all keyframe
+    //     {
+    //         // cout<<"3dpt: "<<all_mappoint[i].pt3d<<endl;
+    //         for(int j = 0; j< all_mappoint[i].visible_keyframe_idx.size();j++)
+    //         {
+    //             //all_keyframe[all_mappoint[i].visible_keyframe_idx[j]]
+    //             // cout<<"2dpt: "<<all_keyframe[all_mappoint[i].visible_keyframe_idx[j]].keypoint[all_mappoint[i].keyframe_indexed_pt2d[j]].pt<<endl;
+    //             // if(all_mappoint[i].visible_keyframe_idx[j] == 3)
+    //             // {
+    //                 problem.AddResidualBlock(new ceres::AutoDiffCostFunction<TReprojectionError, 2, 6, 1,1,1,4>(
+    //                                             new TReprojectionError(all_keyframe[all_mappoint[i].visible_keyframe_idx[j]].keypoint[all_mappoint[i].keyframe_indexed_pt2d[j]].pt.x, all_keyframe[all_mappoint[i].visible_keyframe_idx[j]].keypoint[all_mappoint[i].keyframe_indexed_pt2d[j]].pt.y)),
+    //                                         NULL,
+    //                                         cam_poses[all_mappoint[i].visible_keyframe_idx[j]].data(),
+    //                                         //  t3dpoint+i*3,
+    //                                         &(all_mappoint[i].pt3d.x),
+    //                                         &(all_mappoint[i].pt3d.y),
+    //                                         &(all_mappoint[i].pt3d.z),
+    //                                         camera_intrin_);
+    //                 problem.SetParameterBlockConstant(camera_intrin_);
+    //             // }
+
+    //         }
+    //     }
+    //     ceres::Solver::Options options;
+    //     options.use_nonmonotonic_steps = true;
+    //     options.preconditioner_type = ceres::SCHUR_JACOBI;
+    //     options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+    //     options.use_inner_iterations = true;
+    //     options.max_num_iterations = 20;
+    //     options.minimizer_progress_to_stdout = true;
+    //     ceres::Solver::Summary summary;
+    //     ceres::Solve(options, &problem, &summary);
+    //     cout << summary.BriefReport() << endl;
+
+    //     for(int i = 0;i<all_keyframe.size();i++)
+    //     {
+    //         Eigen::Matrix<double,3,1> R_vec_opt;
+    //         R_vec_opt(0,0) = cam_poses[i](0,0);
+    //         R_vec_opt(1,0) = cam_poses[i](1,0);
+    //         R_vec_opt(2,0) = cam_poses[i](2,0);
+
+    //         Eigen::Matrix<double, 3, 3> R_opt_e;
+    //         ceres::AngleAxisToRotationMatrix<double>(R_vec_opt.data(),R_opt_e.data());
+    //         Mat Ropt;
+    //         eigen2cv(R_opt_e,Ropt);
+    //         all_keyframe[i].R = Ropt;
+    //         all_keyframe[i].t.at<double>(0) = cam_poses[i](0, 1);
+    //         all_keyframe[i].t.at<double>(1) = cam_poses[i](1, 1);
+    //         all_keyframe[i].t.at<double>(2) = cam_poses[i](2, 1);
+
+    //     }
+    //     last_frame.keyframe_.R = all_keyframe[all_keyframe.size()-1].R;
+    //     last_frame.keyframe_.t = all_keyframe[all_keyframe.size()-1].t;
+    // }
 }
