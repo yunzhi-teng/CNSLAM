@@ -1,5 +1,5 @@
 # CNSLAM
-CNSLAM stands for Configurable framework Not only for SLAM, but now it is just a kid. 
+CNSLAM stands for Configurable framework Not only for SLAM, but now it is just a kid.  
 \[WARNING\] There are lots of comments in the code without cleaning now, some for debugging, some for other function. Good for learning, Sorry for your reading. 
 ## dependency
 - ceres for optimization
@@ -28,7 +28,7 @@ Ligntweight Visual Odometry (monocular)
 It is a naive slam project (monocular)
 #### Feature
 - estimate pose using pnp(3D--2D)
-- triangulate new 3D point
+- triangulate new 3D map point
 - BA(for each frame or all frames or choosed frames)
 #### Data structure
 - Tslam: 
