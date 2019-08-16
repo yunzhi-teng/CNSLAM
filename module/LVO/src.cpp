@@ -13,7 +13,7 @@
 #include <opencv2/core/eigen.hpp>
 using namespace cv;
 using namespace std;
-char *raw_path = "/data/SLAM/dataset/kitti/00/image_0/%06d.png";
+char *raw_path = "/data/SLAM/dataset/kitti/11/image_0/%06d.png";
 Mat getimage(int i)
 {
     char path[50];
@@ -57,7 +57,7 @@ int main()
 {
     int image_index = 0;
     Mat traj = Mat::zeros(600, 600, CV_8UC3);
-    vector<vector<float>> poses = get_Pose("/data/SLAM/dataset/poses/00.txt");
+    // vector<vector<float>> poses = get_Pose("/data/SLAM/dataset/poses/11.txt");
     Mat x = Mat::zeros(3, 1, CV_64F);
     Mat Rinv_accumulate = Mat::zeros(3, 3, CV_64F);
     Rinv_accumulate.at<double>(0) = 1;
@@ -73,8 +73,8 @@ int main()
 
         circle(traj, center, 1, Scalar(0, 0, 255), 2);
 
-        Point2f t_center = Point2f(int(poses[i][3]) + 300, int(poses[i][11]) + 100);
-        circle(traj, t_center, 1, Scalar(255, 0, 0), 2);
+        // Point2f t_center = Point2f(int(poses[i][3]) + 300, int(poses[i][11]) + 100);
+        // circle(traj, t_center, 1, Scalar(255, 0, 0), 2);
 
         // cout << t.t() << endl;
         // cout << "["<<poses[i][3] << ", " << poses[i][7] << ", " << poses[i][11] <<"]"<<endl;
@@ -136,7 +136,9 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
     }
     // cout<<"total matches:"<<matches.size()<<endl;
     Mat R, t;
-    Mat K = (Mat_<double>(3, 3) << 7.188560000000e+02, 0.000000000000e+00, 6.071928000000e+02, 0.000000000000e+00, 7.188560000000e+02, 1.852157000000e+02, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
+    // Mat K = (Mat_<double>(3, 3) << 7.188560000000e+02, 0.000000000000e+00, 6.071928000000e+02, 0.000000000000e+00, 7.188560000000e+02, 1.852157000000e+02, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);//00
+    //seq 11
+    Mat K = (Mat_<double>(3, 3) <<7.070912000000e+02, 0.000000000000e+00, 6.018873000000e+02,0.000000000000e+00, 7.070912000000e+02, 1.831104000000e+02,0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
 
     vector<Point2f> points1, points2;
     for (int i = 0; i < (int)matches.size(); i++)
@@ -274,7 +276,7 @@ Mat VO(int image_index, Mat &x, Mat &Rinv_accu)
         options.preconditioner_type = ceres::SCHUR_JACOBI;
         options.linear_solver_type = ceres::ITERATIVE_SCHUR;
         options.use_inner_iterations = true;
-        options.max_num_iterations = 40;
+        options.max_num_iterations = 20;
         options.minimizer_progress_to_stdout = true;
 
         // // // solve
@@ -332,7 +334,9 @@ void triangulation(
               R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
               R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0));
 
-    Mat K = (Mat_<double>(3, 3) << 7.188560000000e+02, 0.000000000000e+00, 6.071928000000e+02, 0.000000000000e+00, 7.188560000000e+02, 1.852157000000e+02, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
+    //Mat K = (Mat_<double>(3, 3) << 7.188560000000e+02, 0.000000000000e+00, 6.071928000000e+02, 0.000000000000e+00, 7.188560000000e+02, 1.852157000000e+02, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);//00
+    //seq 11
+    Mat K = (Mat_<double>(3, 3) <<7.070912000000e+02, 0.000000000000e+00, 6.018873000000e+02,0.000000000000e+00, 7.070912000000e+02, 1.831104000000e+02,0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
     vector<Point2f> pts_1, pts_2;
     for (DMatch m : matches)
     {
