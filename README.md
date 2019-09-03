@@ -10,7 +10,7 @@ https://github.com/yunzhi-teng/CNSLAM/wiki
 - eigen
 
 ## Module
-For now, each module is an independent project.  
+*For now, each module is an independent project.*  
 https://github.com/yunzhi-teng/CNSLAM/wiki  
 LVO, Tslam use opencv's interface.  
 Other 3D vision algorithms are building from scratch (using linear algebra library eigen)
