@@ -1,6 +1,6 @@
 # CNSLAM
 CNSLAM stands for 3D vision Configurable framework Not only for SLAM.   
-https://github.com/yunzhi-teng/CNSLAM/wiki
+https://github.com/yunzhi-teng/CNSLAM/wiki 
 *\[WARNING\] There are lots of comments in the code without cleaning now, some for debugging, some for other function. Sorry for your reading.*
 ## dependency
 *Each module differs*
