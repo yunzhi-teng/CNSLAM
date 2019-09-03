@@ -13,6 +13,11 @@ See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)**
 
 ## Module
 *For now, each module is an independent project.*  
+1. LVO---lightweight visual odometry  
+2. Tslam---Toy Slam  
+3. image_rectification  
+4. QR_decompose  
+benchmark  
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)**  
 ## Result 
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)**  
