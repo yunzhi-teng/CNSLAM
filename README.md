@@ -4,8 +4,9 @@ See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for more information
 *\[WARNING\] There are lots of comments in the code without cleaning now, some for debugging, some for other function. Sorry for your reading.*
 ## Dependency
 *Each module differs*  
-*LVO, Tslam use opencv's interface.*  
-*Other 3D vision algorithms are building from scratch (using linear algebra library eigen)*  
+*Level 3 : LVO, Tslam use opencv's interface.*  
+*Level 2 : Other 3D vision algorithms are building from scratch (using linear algebra library eigen)*  
+*Level 1 : numerical math methods(eg. matrix decompose) implemented by myself*  
 - ceres for optimization
 - pcl for point cloud visualization
 - opencv
