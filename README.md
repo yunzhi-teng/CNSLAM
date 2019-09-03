@@ -20,6 +20,6 @@ See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)**
 - Implement 3D vision related algorithms independently. Only use linear algebra library. 
 - 3D vision System
 ## Dataset used
-See **[Dataset used](https://github.com/yunzhi-teng/CNSLAM/wiki)**  
+See **[Dataset used](https://github.com/yunzhi-teng/CNSLAM/wiki/Dataset-related)**  
 - kitti
 - inria syntim
