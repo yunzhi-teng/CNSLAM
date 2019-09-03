@@ -3,3 +3,4 @@ wiki_docs/lvo1.png filter=lfs diff=lfs merge=lfs -text
 wiki_docs/ts1.png filter=lfs diff=lfs merge=lfs -text
 wiki_docs/ts2.png filter=lfs diff=lfs merge=lfs -text
 wiki_docs/tslog.png filter=lfs diff=lfs merge=lfs -text
+wiki_docs/image-rectify.png filter=lfs diff=lfs merge=lfs -text
