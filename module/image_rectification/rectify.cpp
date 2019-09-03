@@ -30,6 +30,46 @@ void Trectify(const Matrix<double,3,4>& po1,const Matrix<double,3,4>& po2,
 {
 
 }
+double Slope(int x0, int y0, int x1, int y1)
+{
+    return (double)(y1 - y0) / (x1 - x0);
+}
+
+// void fullLine(cv::Mat &img, cv::Point a, cv::Point b, cv::Scalar color)
+// {
+//     double slope = Slope(a.x, a.y, b.x, b.y);
+
+//     cv::Point p, q;
+//     p.y = img.rows;
+//     p.x = (p.y - a.y)/slope + a.x;
+//     q.x = 
+
+//     line(img, p, q, color, 1, 8, 0);
+// }
+Eigen::MatrixXd pinv(Eigen::MatrixXd  A)
+{
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);//M=USV*
+    double  pinvtoler = 1.e-8; //tolerance
+    int row = A.rows();
+    int col = A.cols();
+    int k = min(row,col);
+    Eigen::MatrixXd X = Eigen::MatrixXd::Zero(col,row);
+    Eigen::MatrixXd singularValues_inv = svd.singularValues();//奇异值
+    Eigen::MatrixXd singularValues_inv_mat = Eigen::MatrixXd::Zero(col, row);
+    for (long i = 0; i<k; ++i) {
+        if (singularValues_inv(i) > pinvtoler)
+            singularValues_inv(i) = 1.0 / singularValues_inv(i);
+        else singularValues_inv(i) = 0;
+    }
+    for (long i = 0; i < k; ++i) 
+    {
+        singularValues_inv_mat(i, i) = singularValues_inv(i);
+    }
+    X=(svd.matrixV())*(singularValues_inv_mat)*(svd.matrixU().transpose());//X=VS+U*
+ 
+    return X;
+ 
+}
 void factorizeKRt(const Matrix<double,3,4>& p, Matrix<double,3,3>& R, Matrix<double,3,1>& t, Matrix<double,3,3>& K)
 {
     Matrix<double,3,3> Q_ = p.block(0,0,3,3).inverse();
@@ -63,11 +103,11 @@ int main()
 
     cv::Mat img1 = cv::imread(path_1);
     cv::Mat img2 = cv::imread(path_2);
-    cv::imshow("img1",img1);
-    cv::waitKey(1);//l
+    // cv::imshow("img1",img1);
+    // cv::waitKey(1);//l
 
-    cv::imshow("img2",img2);
-    cv::waitKey(-1);
+    // cv::imshow("img2",img2);
+    // cv::waitKey(-1);
 
     Po1<< 976.5, 53.82, -239.8, 3.875e+05, 98.49, 933.3, 157.4, 2.428e+05, 0.5790, 0.1108, 0.8077, 1118;
     cout<<"po1:" << Po1<<endl;
@@ -106,7 +146,7 @@ int main()
         cout<<"po1i:" << tPo1<<endl;
     }
     K1(0,2) = K1(0,2)+160;
-    MatrixXd c1 = - (Po1.block(0,0,3,3)).inverse()*Po1.block<3,1>(0,3);
+    MatrixXd c1 = - (Po1.block(0,0,3,3)).inverse()*Po1.block<3,1>(0,3);//world coordinate
     MatrixXd c2 = - (Po2.block(0,0,3,3)).inverse()*Po2.block<3,1>(0,3);
     cout << "c1； "<<c1<<endl;
     Matrix<double,3,1> v1,v2,v3;
@@ -137,10 +177,12 @@ int main()
     Pn1 = K1 * interm_1;
     Pn2 = K1 * interm_2;
     cout<<"pn1: "<<Pn1<<endl;
+    cout<<"pn2: "<<Pn2<<endl;
     Matrix<double,3,3> T1,T2;
     T1 = Pn1.block<3,3>(0,0) * Po1.block<3,3>(0,0).inverse();
-    T2 = Pn1.block<3,3>(0,0) * Po1.block<3,3>(0,0).inverse();
+    T2 = Pn2.block<3,3>(0,0) * Po2.block<3,3>(0,0).inverse();
     cout<<"T1: "<<T1<<endl;
+    cout<<"T2: "<<T2<<endl;
     cv::Mat cv_T1,cv_T2,dimg1,dimg2;
     cv::eigen2cv(T1,cv_T1);
     cv::eigen2cv(T2,cv_T2);
@@ -149,9 +191,62 @@ int main()
     cv::warpPerspective(img2,dimg2,cv_T2,sz);
     // cv::perspectiveTransform(img1,dimg1,cv_T1);
     // cv::perspectiveTransform(img2,dimg2,cv_T2);
+
+    //epipolar geometry verify
+        Matrix<double,4,3> pn1inv;//right psuedo inverse
+        pn1inv = pinv(Pn1);
+    {
+        int lineThickness = 2;
+        cv::Point s,e,sp,s_manual,e_manual;
+        Matrix<double,2,1> x;
+        Matrix<double,3,1> x_h, xp1_h, epipole_h;
+        Matrix<double ,4,1> c1_h;
+        x_h << 200,200,1;
+        sp.x = 200;//point in img1
+        sp.y = 200;
+        cout<< Pn2 <<pn1inv<<x_h<<endl;
+        //find epipolar line 
+
+        //1 project c1 and point to img2  -----> epipole and xp 
+        Matrix<double,3,3> interm;
+        interm = Pn2*pn1inv;
+        cout<<"interm: "<<interm<<endl;
+        xp1_h =  (interm * x_h);
+        c1_h<< c1,1;
+        epipole_h = Pn2 * c1_h;
+        cout <<endl<<epipole_h<<";"<<xp1_h<<endl;
+        //2 find a full line in image (not line segment) using P^2 geometry
+        epipole_h(0,0) = epipole_h(0,0)/epipole_h(2,0);
+        epipole_h(1,0) = epipole_h(1,0)/epipole_h(2,0);
+        xp1_h(0,0) = xp1_h(0,0)/xp1_h(2,0);
+        xp1_h(1,0) = xp1_h(1,0)/xp1_h(2,0);
+        epipole_h(2,0) = 1;
+        xp1_h(2,0) = 1;
+        Matrix<double,3,1> line1, img_l,img_r,img_t,img_b, p1_h,p2_h;
+        line1 = xp1_h.cross(epipole_h);
+        img_l<<1, 0, 0;
+        img_r<<1, 0, -dimg2.cols;
+        p1_h =  line1.cross(img_l);
+        p2_h =  line1.cross(img_r);
+
+        s.x = p1_h(0,0)/p1_h(2,0);
+        s.y = p1_h(1,0)/p1_h(2,0);
+        e.x = p2_h(0,0)/p2_h(2,0);
+        e.y = p2_h(1,0)/p2_h(2,0);
+        cout <<endl<<s<<";"<<e<<endl;
+        cv::line(dimg2, s, e, cv::Scalar(100,255,100), lineThickness);
+        cv::circle(dimg1,sp,1,cv::Scalar(100,255,100),lineThickness);
+    }
+
     cv::imshow("dimg1",dimg1);
     cv::waitKey(1);
     cv::imshow("dimg2",dimg2);
     cv::waitKey(-1);
+
+    cv::imwrite("dimg1.png",dimg1);
+    cv::imwrite("img1.png",img1);
+    cv::imwrite("dimg2.png",dimg2);
+    cv::imwrite("img2.png",img2);
+
 
 }
