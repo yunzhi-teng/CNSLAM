@@ -12,8 +12,6 @@ set(OpenCV_DIR "/data/Downloads/opencv/opencv/build/")
 find_package( OpenCV )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-find_package( Ceres REQUIRED )
-include_directories( ${CERES_INCLUDE_DIRS} )
 
 find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 include_directories(${PCL_INCLUDE_DIRS})
@@ -24,7 +22,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories( "/usr/include/eigen3" )
 
-file(GLOB SRC *.cpp)
+file(GLOB SRC *.cpp ../stereomatch/*.cpp)
 
 
 add_executable( image_rectify ${SRC} )

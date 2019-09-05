@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 #include <Eigen/QR>
 #include <opencv2/core/eigen.hpp>
+#include "../stereomatch/stereomatch.hpp"
 using namespace Eigen;
 using namespace std;
 
@@ -30,22 +31,8 @@ void Trectify(const Matrix<double,3,4>& po1,const Matrix<double,3,4>& po2,
 {
 
 }
-double Slope(int x0, int y0, int x1, int y1)
-{
-    return (double)(y1 - y0) / (x1 - x0);
-}
 
-// void fullLine(cv::Mat &img, cv::Point a, cv::Point b, cv::Scalar color)
-// {
-//     double slope = Slope(a.x, a.y, b.x, b.y);
 
-//     cv::Point p, q;
-//     p.y = img.rows;
-//     p.x = (p.y - a.y)/slope + a.x;
-//     q.x = 
-
-//     line(img, p, q, color, 1, 8, 0);
-// }
 Eigen::MatrixXd pinv(Eigen::MatrixXd  A)
 {
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);//M=USV*
@@ -54,7 +41,7 @@ Eigen::MatrixXd pinv(Eigen::MatrixXd  A)
     int col = A.cols();
     int k = min(row,col);
     Eigen::MatrixXd X = Eigen::MatrixXd::Zero(col,row);
-    Eigen::MatrixXd singularValues_inv = svd.singularValues();//奇异值
+    Eigen::MatrixXd singularValues_inv = svd.singularValues();//singular value
     Eigen::MatrixXd singularValues_inv_mat = Eigen::MatrixXd::Zero(col, row);
     for (long i = 0; i<k; ++i) {
         if (singularValues_inv(i) > pinvtoler)
@@ -234,19 +221,41 @@ int main()
         e.x = p2_h(0,0)/p2_h(2,0);
         e.y = p2_h(1,0)/p2_h(2,0);
         cout <<endl<<s<<";"<<e<<endl;
-        cv::line(dimg2, s, e, cv::Scalar(100,255,100), lineThickness);
-        cv::circle(dimg1,sp,1,cv::Scalar(100,255,100),lineThickness);
+        // cv::line(dimg2, s, e, cv::Scalar(100,255,100), lineThickness);
+        // cv::circle(dimg1,sp,1,cv::Scalar(100,255,100),lineThickness);
     }
 
     cv::imshow("dimg1",dimg1);
     cv::waitKey(1);
     cv::imshow("dimg2",dimg2);
+    cv::waitKey(1);
+
+    // cv::imwrite("dimg1.png",dimg1);
+    // cv::imwrite("img1.png",img1);
+    // cv::imwrite("dimg2.png",dimg2);
+    // cv::imwrite("img2.png",img2);
+
+    // call stereo match
+    {
+        // cv::imshow("disp_l",ssd(dimg1,dimg2,"left"));
+        // cv::imshow("disp_r",ssd(dimg1,dimg2,"right"));
+        // cv::imshow("disp_l_n",ncc(dimg1,dimg2,"left"));
+        // cv::imshow("disp_r_n",ncc(dimg1,dimg2,"right"));
+        // cv::imshow("disp_l_a",asw(dimg1,dimg2,"left"));
+        // cv::imshow("disp_r_a",asw(dimg1,dimg2,"right"));
+        cv::Mat dst = ssd(dimg1,dimg2,"left");
+        cv::Mat dstr = ssd(dimg1,dimg2,"right");
+        dstr = dstr*2;
+        dst = dst * 2;
+        // cout<<"dst: "<<dst<<endl;
+        cv::imshow("disp_l",dst);
+        cv::imshow("dist_r", dstr);
+        cv::imwrite("disp_r.png",dstr);
+        cv::imwrite("disp_l.png",dst);
+
+        // cv::imwrite("disp_r.png",ssd(dimg1,dimg2,"right"));
+
+    }
     cv::waitKey(-1);
-
-    cv::imwrite("dimg1.png",dimg1);
-    cv::imwrite("img1.png",img1);
-    cv::imwrite("dimg2.png",dimg2);
-    cv::imwrite("img2.png",img2);
-
 
 }
