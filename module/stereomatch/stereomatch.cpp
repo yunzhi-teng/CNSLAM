@@ -103,6 +103,5 @@ cv::Mat ssd(const cv::Mat& limg, const cv::Mat& rimg, std::string type, bool add
             }
         }
     }
-    cout<<disparity<<endl;
     return disparity;
 }

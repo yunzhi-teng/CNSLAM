@@ -239,10 +239,6 @@ int main()
     {
         // cv::imshow("disp_l",ssd(dimg1,dimg2,"left"));
         // cv::imshow("disp_r",ssd(dimg1,dimg2,"right"));
-        // cv::imshow("disp_l_n",ncc(dimg1,dimg2,"left"));
-        // cv::imshow("disp_r_n",ncc(dimg1,dimg2,"right"));
-        // cv::imshow("disp_l_a",asw(dimg1,dimg2,"left"));
-        // cv::imshow("disp_r_a",asw(dimg1,dimg2,"right"));
         cv::Mat dst = ssd(dimg1,dimg2,"left");
         cv::Mat dstr = ssd(dimg1,dimg2,"right");
         dstr = dstr*2;
