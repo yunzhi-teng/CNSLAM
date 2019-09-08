@@ -33,7 +33,7 @@ int64_t ssd_kernel(const cv::Mat& in1, const cv::Mat& in2,const int size )
     }
     return ssd;
 }
-cv::Mat ssd(const cv::Mat& limg, const cv::Mat& rimg, std::string type, bool add_constant)
+cv::Mat ssd(const cv::Mat& limg, const cv::Mat& rimg, const std::string type, const bool add_constant)
 {
     // CHECK_EQ(limg.size().height,rimg.size().height);
     // CHECK_EQ(limg.size().width,rimg.size().width);

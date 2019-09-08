@@ -22,7 +22,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories( "/usr/include/eigen3" )
 
-file(GLOB SRC *.cpp ../stereomatch/*.cpp)
+file(GLOB SRC *.cpp ../stereomatch/*.cpp ../triangulation/*.cpp)
 
 
 add_executable( image_rectify ${SRC} )

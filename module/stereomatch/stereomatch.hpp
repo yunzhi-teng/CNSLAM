@@ -11,5 +11,5 @@
 #include <Eigen/Dense>
 #include <Eigen/QR>
 #include <opencv2/core/eigen.hpp>
-cv::Mat ssd(const cv::Mat& limg, const cv::Mat& rimg, std::string type, bool add_constant=false);
+cv::Mat ssd(const cv::Mat& limg, const cv::Mat& rimg, const std::string type, const bool add_constant=false);
 
