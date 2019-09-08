@@ -2,11 +2,17 @@
 CNSLAM stands for 3D vision Configurable framework Not only for SLAM.  
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for more information  
 *\[WARNING\] There are lots of comments in the code without cleaning now, some for debugging, some for other function. Sorry for your reading.*
+## Description
+We separate CNSLAM's modules into three level.  
+Level 3, **Pipeline** : LVO, Tslam  
+Level 2, **Algorithm** : 3D vision algorithms from scratch (using linear algebra library eigen)  
+Level 1, **Math** : numerical math methods(eg. matrix decompose) implemented by myself  
+
 ## Dependency
-*Each module differs*  
-*Level 3 : LVO, Tslam use opencv's interface.*  
-*Level 2 : Other 3D vision algorithms are building from scratch (using linear algebra library eigen)*  
-*Level 1 : numerical math methods(eg. matrix decompose) implemented by myself*  
+*Each module differs. For now,*  
+*Level 3 : use opencv's interface.*  
+*Level 2 : eigen and some with opencv's datastructure*  
+*Level 1 : eigen's datastructure*  
 - ceres for optimization
 - pcl for point cloud visualization
 - opencv
@@ -18,12 +24,14 @@ See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for more information
 2. Tslam---Toy Slam  
 3. image_rectification and epipolar geometry
 4. QR_decompose  
+5. Stereo match  
+6. triangulate  
 benchmark  
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for more information  
 ## Result 
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for each module's result  
 ## to do
-- Implement 3D vision related algorithms independently. Only use linear algebra library. 
+- Implement 3D vision related algorithms independently.  
 - 3D vision System
 ## Dataset used
 See **[Dataset used](https://github.com/yunzhi-teng/CNSLAM/wiki/Dataset-related)**  for more information
