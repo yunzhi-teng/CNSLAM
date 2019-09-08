@@ -1,6 +1,6 @@
 #include <iostream>
-#include <ceres/ceres.h>
-#include <ceres/rotation.h>
+// #include <ceres/ceres.h>
+// #include <ceres/rotation.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -12,6 +12,9 @@
 #include <Eigen/QR>
 #include <opencv2/core/eigen.hpp>
 #include "../stereomatch/stereomatch.hpp"
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include "../triangulation/triangulation.hpp"
 using namespace Eigen;
 using namespace std;
 
@@ -82,7 +85,39 @@ void factorizeKRt(const Matrix<double,3,4>& p, Matrix<double,3,3>& R, Matrix<dou
     cout<<"fact_K: "<<K<<endl;
 
 }
+class PclWrapper {
+public:
+    PclWrapper(const int width_,const int height_,const string path_,const bool isdense) ;
+    void savepcl();
+    void addtopcl(double x, double y, double z);
+    string path;
+private:
+   pcl::PointCloud<pcl::PointXYZ> cloud; 
+   int pidx = 0;
 
+};
+PclWrapper::PclWrapper(const int width_,const int height_,const string path_,const bool isdense): path(path_)
+{
+    cloud.width = width_;
+    cloud.height = height_;
+    cloud.is_dense = isdense;
+    cloud.points.resize(cloud.width *cloud.height);
+}
+void PclWrapper::savepcl()
+{
+    pcl::io::savePCDFileASCII(path,cloud);
+}
+void PclWrapper::addtopcl(double x, double y, double z)
+{
+    if(pidx < cloud.points.size())
+    {
+        cloud.points[pidx].x = x;
+        cloud.points[pidx].y = y;
+        cloud.points[pidx].z = z;
+        // cout<<cloud.points[pidx]<<", ";
+        pidx++;
+    }
+}
 int main()
 {
 
@@ -239,18 +274,71 @@ int main()
     {
         // cv::imshow("disp_l",ssd(dimg1,dimg2,"left"));
         // cv::imshow("disp_r",ssd(dimg1,dimg2,"right"));
-        cv::Mat dst = ssd(dimg1,dimg2,"left");
-        cv::Mat dstr = ssd(dimg1,dimg2,"right");
-        dstr = dstr*2;
-        dst = dst * 2;
+        // cv::Mat dst = ssd(dimg1,dimg2,"left");
+
+        // cv::Mat dstr = ssd(dimg1,dimg2,"right");
+        // dstr = dstr*2;
+        // dst = dst * 2;
         // cout<<"dst: "<<dst<<endl;
-        cv::imshow("disp_l",dst);
-        cv::imshow("dist_r", dstr);
-        cv::imwrite("disp_r.png",dstr);
-        cv::imwrite("disp_l.png",dst);
+        // cv::imshow("disp_l",dst);
+        // cv::imshow("dist_r", dstr);
+        // cv::imwrite("disp_r.png",dstr);
+        // cv::imwrite("disp_l.png",dst);
 
         // cv::imwrite("disp_r.png",ssd(dimg1,dimg2,"right"));
 
+        // call triangulate
+        {
+            cv::Mat dst = cv::imread("disp_l.png",cv::IMREAD_GRAYSCALE);
+            dst = dst /2;
+            PclWrapper pclcloud(768,576,"sfm.pcd",true);
+            vector<double> depths;
+            for(int i = 0; i< dimg1.rows;i++)//left
+            // for(int i = 0; i< 1;i++)//left
+            {
+                for(int j = 0; j< dimg1.cols;j++)
+                // for(int j = 0; j< 1;j++)
+                {
+                    Matrix<double,3,1> x,x1;
+                    Matrix<double,3,1> X;
+                    // without kinv will give multiple plane projected
+                    // 
+                    Matrix<double,3,3> k1inv =  K1.inverse();
+                    x(0,0) = j;
+                    x(1,0) = i;
+                    x(2,0) = 1;
+                    // x = k1inv * x;
+                    x1(0,0) = j - dst.at<uchar>(i,j);
+                    x1(1,0) = i;
+                    x1(2,0) = 1;
+                    // x1 = k1inv * x1;
+
+                    X = linear_triangulation(x,Pn1,x1,Pn2);
+                    // cv::triangulatePoints(Pn1, Pn2, pts_1, pts_2, pts_4d);
+                    if( abs(X(2,0)/1000) > 2.4 || abs(X(2,0)/1000)<2.15 && abs(X(2,0)/1000)>1.4)
+                    {
+                        pclcloud.addtopcl(-(X(0,0)/1000),-(X(1,0)/1000),-(X(2,0)/1000));
+                    //     pclcloud.addtopcl(-X(0,0)/10e+5,-X(1,0)/10e+5,-X(2,0)/10e+5);
+                        // depth.
+                    }
+                    
+
+                }
+            }
+        //         {
+        // double minVal,maxVal;
+        // cv::minMaxLoc(depths, &minVal, &maxVal);
+        // Mat tmp(240,320,CV_8UC3); //cvtColor(img_1_orig, tmp, CV_BGR2HSV);
+        // for (unsigned int i=0; i   double _d = MAX(MIN((pointcloud[i].z-minVal)/(maxVal-minVal),1.0),0.0);
+        //     circle(tmp, correspImg1Pt[i], 1, Scalar(255 * (1.0-(_d)),255,255), CV_FILLED);
+        // }
+        // cvtColor(tmp, tmp, CV_HSV2BGR);
+        // imshow("out", tmp);
+        // waitKey(0);
+        // destroyWindow("out");
+        //  }
+            pclcloud.savepcl();
+        }
     }
     cv::waitKey(-1);
 
