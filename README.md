@@ -26,8 +26,16 @@ Level 1, **Math** : numerical math methods(eg. matrix decompose) implemented by 
 4. QR_decompose  
 5. Stereo match  
 6. triangulate  
+7. estimate essential matrix and recover pose
+8. pnp
 benchmark  
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for more information  
+## Usage
+- git clone 
+- cd CNSLAM
+- mkdir build && cd build && cmake ..
+- make
+
 ## Result 
 See **[Wiki](https://github.com/yunzhi-teng/CNSLAM/wiki)** for each module's result  
 ## to do
