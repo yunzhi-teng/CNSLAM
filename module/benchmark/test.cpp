@@ -4,14 +4,15 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include "opencv2/opencv.hpp"
-#include <ceres/ceres.h>
-#include <ceres/rotation.h>
+// #include <ceres/ceres.h>
+// #include <ceres/rotation.h>
 // #include <opencv2/sfm/numeric.hpp>
 #include <fstream>
-#include "projectionerr.hpp"
+// #include "projectionerr.hpp"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
+#include "../pnp/pnp.hpp"
 using namespace cv;
 using namespace std;
 char *raw_path = "/data/SLAM/dataset/kitti/00/image_0/%06d.png";
@@ -274,6 +275,13 @@ int main(){
     cout<<"point1:"<<p1[1]<<endl<<trans(pnp_recover_R,pnp_recover_t_vec,pw[1])<<endl<<trans(R.inv(),(R.inv())*t*(-1),pw[1])<<endl;
     cout<<"pointworld: "<<pw[1]<<endl<<inv_trans(pnp_recover_R,pnp_recover_t_vec,p1[1])<<endl<<trans(R,t,p1[1])<<endl;
     // triangulation(keypoints1, keypoints2, matches, R, t, point_3D);
+}
+
+{//self 3d-->2d
+    cout << endl <<"self_pnp: "<<endl;
+    Rt_pnp res = solve_pnp(K_e,points1,point_3Dw);
+    cout<< "self_R: "<<res.R<<endl;
+    cout<< "self_t: "<<res.t<<endl;
 }
 
 }

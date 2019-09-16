@@ -13,8 +13,8 @@ set(OpenCV_DIR "/data/Downloads/opencv/opencv/build/")
 find_package( OpenCV )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-find_package( Ceres REQUIRED )
-include_directories( ${CERES_INCLUDE_DIRS} )
+# find_package( Ceres REQUIRED )
+# include_directories( ${CERES_INCLUDE_DIRS} )
 
 include_directories( "/usr/include/eigen3" )
 
@@ -22,7 +22,8 @@ include_directories( "/usr/include/eigen3" )
 
 
 # add_executable( LVO ${SRC} )
-add_executable(test test.cpp )
+add_executable(ttest test.cpp ../pnp/pnp.cpp )
 
 # target_link_libraries( LVO ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )
-target_link_libraries( test ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )
+# target_link_libraries( test ${CERES_LIBRARIES} ${OpenCV_LIBS} pthread )
+target_link_libraries( ttest ${OpenCV_LIBS} pthread )
