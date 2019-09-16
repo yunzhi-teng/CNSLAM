@@ -97,6 +97,7 @@ int main()
         Mat confi;
         essential_mat = findEssentialMat(points1, points2, focal_length, principal_point);
         cout << "E_cv:" << essential_mat << endl;
+
         recoverPose(essential_mat, points1, points2, R, t, focal_length, principal_point);
         cout << "t_cv:" << t.t() << endl;
         cout << "R_cv: " << R << endl;

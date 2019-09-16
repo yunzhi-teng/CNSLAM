@@ -8,7 +8,7 @@ inline double gety(const cv::Point2f &p)
 {
     return (double)(p.y);
 }
-Eigen::Matrix<double,3,3> skews(const Eigen::Matrix<double,3,1>& in)
+static Eigen::Matrix<double,3,3> skews(const Eigen::Matrix<double,3,1>& in)
 {
     Eigen::Matrix<double,3,3> s ;
     s<< 0,-in(2,0),in(1,0),in(2,0),0,-in(0,0),-in(1,0),in(0,0),0;
@@ -55,7 +55,7 @@ Eigen::Matrix<double,3,3> computeE(const std::vector<cv::Point2f> &points1,
     int mapi2ptidx[8];
     for(int i = 0; i < 8 ; i++)
     {
-        mapi2ptidx[i] = (0 + i*(points1.size()/8)) % points1.size();
+        mapi2ptidx[i] = (1 + i*(points1.size()/8)) % points1.size();
     }
     for(int i = 0; i < 8 ; i++)
     {
@@ -72,7 +72,18 @@ Eigen::Matrix<double,3,3> computeE(const std::vector<cv::Point2f> &points1,
     // Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);//Af = 0
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);//Af = 0
     std::cout << "A: "<< A<<std::endl;
+    std::cout << "A_U: "<<svd.matrixU()<<std::endl;
+    std::cout << "A_S: "<<svd.singularValues()<<std::endl;
     std::cout << "A_v: "<<svd.matrixV()<<std::endl;
+    cv::Mat cv_A,cv_A_U,cv_A_S,cv_A_V;
+    cv::eigen2cv(A,cv_A);
+
+    // cv::SVDecomp(cv_A, cv_A_S, cv_A_U, cv_A_V);
+    cv::SVD::compute(cv_A, cv_A_S, cv_A_U, cv_A_V);
+    std::cout << "cv_svd_A: "<<cv_A<<std::endl;
+    std::cout << "cv_svd_A_U: "<<cv_A_U<<std::endl;
+    std::cout << "cv_svd_A_S: "<<cv_A_S<<std::endl;
+    std::cout << "cv_svd_A_V: "<<cv_A_V<<std::endl;
     e = (svd.matrixV().block<9,1>(0,8));
     Eigen::Matrix<double,3,3> E;
     std::cout<<"e: "<<e<<std::endl;
